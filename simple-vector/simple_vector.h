@@ -19,6 +19,9 @@ public:
 
 };
 
+TransCapacity Reserve(size_t capacity_to_reserve) {
+    return TransCapacity(capacity_to_reserve);
+};
 
 template <typename Type>
 class SimpleVector {
@@ -50,9 +53,16 @@ public:
         items_.swap(res);
         size_ = size;
         capacity_ = size;
-        //std::fill(this->begin(), this->end(), Type{});
-        for(size_t i = 0; i < size; ++i)
-          items_[i] = std::move(Type());
+        for(size_t i = 0; i < size; ++i){
+         items_[i] = std::move(Type());
+        }
+         //SimpleVector(size, Type{}) не работает
+         // std::move(items_.Get(), items_.Get() + size, Type{}); не работает
+         //SimpleVector(size, std::move(Type{})); //-не работает
+         /*const Type& value = Type{};
+         SimpleVector(size, value);*/ //не работает
+        //std::fill(items_.Get(), items_.Get() + size, Type{}); не работает
+        //std::fill(this->begin(), this->end(), Type{}); не работает
     }
 
     // Создаёт вектор из size элементов, инициализированных значением value
@@ -88,16 +98,18 @@ public:
 
     // Сообщает, пустой ли массив
     bool IsEmpty() const noexcept {
-        return size_ == 0 ? true : false;
+        return size_ == 0;
     }
 
     // Возвращает ссылку на элемент с индексом index
     Type& operator[](size_t index) noexcept {
+        assert(index < size_ && "requested index is out of range");
         return items_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     const Type& operator[](size_t index) const noexcept {
+        assert(index < size_ && "requested index is out of range");
         const Type &res = items_[index];
         return res;
     }
@@ -105,18 +117,21 @@ public:
     // Возвращает константную ссылку на элемент с индексом index
     // Выбрасывает исключение std::out_of_range, если index >= size
     Type& At(size_t index) {
-        if(index >= size_) throw std::out_of_range("index not avaliable");
-        else return items_[index];
+        if(index >= size_) {
+          throw std::out_of_range("index not avaliable");
+        }
+        return items_[index];
     }
 
     // Возвращает константную ссылку на элемент с индексом index
     // Выбрасывает исключение std::out_of_range, если index >= size
     const Type& At(size_t index) const {
-        if(index >= size_) throw std::out_of_range("index not avaliable");
-        else {
-          const Type &ref_to_item = items_[index];
-          return ref_to_item;
+        if(index >= size_) {
+          throw std::out_of_range("index not avaliable");
         }
+
+        const Type &ref_to_item = items_[index];
+        return ref_to_item;
     }
 
     // Обнуляет размер массива, не изменяя его вместимость
@@ -127,47 +142,46 @@ public:
     // Изменяет размер массива.
     // При увеличении размера новые элементы получают значение по умолчанию для типа Type
     void Resize(size_t new_size) {
-        if(new_size <= size_) {
-          size_ = new_size;
-        }
-        else if(new_size > capacity_) {
+        if(new_size > capacity_) {
           SimpleVector<Type> new_vec(new_size);
-          for(size_t t = 0; t < this->size_; ++t)
-          new_vec[t] = std::move(items_[t]);
+          for(size_t t = 0; t < this->size_; ++t){
+            new_vec[t] = std::move(items_[t]);
+          }
           items_.swap(new_vec.items_);
-          size_ = new_size;
           capacity_ = new_size;
-        } else if(new_size > size_){
-          SimpleVector<Type> new_ptr(new_size);
-          for(size_t t = 0; t < this->size_; ++t)
-          new_ptr[t] = std::move(items_[t]);
-          items_.swap(new_ptr.items_);
-          size_ = new_size;
         }
+        else if(new_size > size_){
+          SimpleVector<Type> new_ptr(new_size);
+          for(size_t t = 0; t < this->size_; ++t){
+            new_ptr[t] = std::move(items_[t]);
+          }
+          items_.swap(new_ptr.items_);
+        }
+        size_ = new_size;
     }
 
     // Возвращает итератор на начало массива
     // Для пустого массива может быть равен (или не равен) nullptr
     Iterator begin() noexcept {
-        return &items_[0];
+        return items_.Get();
     }
 
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     Iterator end() noexcept {
-        return &items_[size_];
+        return items_.Get() + size_;
     }
 
     // Возвращает константный итератор на начало массива
     // Для пустого массива может быть равен (или не равен) nullptr
     ConstIterator begin() const noexcept {
-        return &items_[0];
+        return items_.Get();
     }
 
     // Возвращает итератор на элемент, следующий за последним
     // Для пустого массива может быть равен (или не равен) nullptr
     ConstIterator end() const noexcept {
-        return &items_[size_];
+        return items_.Get() + size_;
     }
 
     // Возвращает константный итератор на начало массива
@@ -243,6 +257,7 @@ public:
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, const Type& value) {
       Iterator s = const_cast<Iterator>(pos);
+      assert((s >= this->begin() && s <= this->end()) && "Iterator out of range");
       size_t dist = std::distance(this->begin(), s);
       size_t cur_size = size_;
       if(!(size_ < capacity_)){
@@ -266,6 +281,7 @@ public:
     // вместимость вектора должна увеличиться вдвое, а для вектора вместимостью 0 стать равной 1
     Iterator Insert(ConstIterator pos, Type&& value) {
       Iterator s = const_cast<Iterator>(pos);
+      assert((s >= this->begin() && s <= this->end()) && "Iterator out of range");
       size_t dist = std::distance(this->begin(), s);
       size_t cur_size = size_;
       if(!(size_ < capacity_)){
@@ -285,14 +301,15 @@ public:
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
     void PopBack() noexcept {
-        if(!this->IsEmpty()){
-          --size_;
-        }
+        assert(this->IsEmpty() && "Simple vector already empty");
+        --size_;
     }
 
     // Удаляет элемент вектора в указанной позиции
     Iterator Erase(ConstIterator pos) {
         Iterator s = const_cast<Iterator>(pos);
+        assert((s >= this->begin() && s <= this->end()) && "Iterator out of range");
+        assert(this->IsEmpty() && "Simple vector already empty");
         size_t dist = std::distance(this->begin(), s);
         SimpleVector<Type> to_vector(size_ - 1);
         std::move(this->begin(), s , to_vector.begin());
