@@ -21,7 +21,7 @@ public:
 
 TransCapacity Reserve(size_t capacity_to_reserve) {
     return TransCapacity(capacity_to_reserve);
-};
+}
 
 template <typename Type>
 class SimpleVector {
@@ -56,6 +56,9 @@ public:
         for(size_t i = 0; i < size; ++i){
          items_[i] = std::move(Type());
         }
+        //explicit SimpleVector(size_t size) : SimpleVector(size, Type{}) {}
+        // не работает /usr/include/c++/10/bits/stl_algobase.h|861|error: use of deleted function ‘X& X::operator=(const X&)’|
+        //Как и во всех предыдущих случаях закоменченых, там видимо при передаче тайп где то копируется
          //SimpleVector(size, Type{}) не работает
          // std::move(items_.Get(), items_.Get() + size, Type{}); не работает
          //SimpleVector(size, std::move(Type{})); //-не работает
@@ -300,8 +303,10 @@ public:
     }
 
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
+    // Не очень понимаю в чём недостаточность или неправильность данного условия, не могли бы пояснить
     void PopBack() noexcept {
-        assert(this->IsEmpty() && "Simple vector already empty");
+        //assert(this->IsEmpty() && "Simple vector already empty");
+        if(this->IsEmpty()) return ;
         --size_;
     }
 
@@ -309,7 +314,8 @@ public:
     Iterator Erase(ConstIterator pos) {
         Iterator s = const_cast<Iterator>(pos);
         assert((s >= this->begin() && s <= this->end()) && "Iterator out of range");
-        assert(this->IsEmpty() && "Simple vector already empty");
+        //assert(this->IsEmpty() && "Simple vector already empty");
+        if(this->IsEmpty()) return this->begin();
         size_t dist = std::distance(this->begin(), s);
         SimpleVector<Type> to_vector(size_ - 1);
         std::move(this->begin(), s , to_vector.begin());
