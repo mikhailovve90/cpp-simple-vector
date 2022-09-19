@@ -305,8 +305,7 @@ public:
     // "Удаляет" последний элемент вектора. Вектор не должен быть пустым
     // Не очень понимаю в чём недостаточность или неправильность данного условия, не могли бы пояснить
     void PopBack() noexcept {
-        //assert(this->IsEmpty() && "Simple vector already empty");
-        if(this->IsEmpty()) return ;
+         assert(!(this->IsEmpty()) && "Simple vector already empty");
         --size_;
     }
 
@@ -314,8 +313,7 @@ public:
     Iterator Erase(ConstIterator pos) {
         Iterator s = const_cast<Iterator>(pos);
         assert((s >= this->begin() && s <= this->end()) && "Iterator out of range");
-        //assert(this->IsEmpty() && "Simple vector already empty");
-        if(this->IsEmpty()) return this->begin();
+        assert(!(this->IsEmpty()) && "Simple vector already empty");
         size_t dist = std::distance(this->begin(), s);
         SimpleVector<Type> to_vector(size_ - 1);
         std::move(this->begin(), s , to_vector.begin());
